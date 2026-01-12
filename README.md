@@ -26,7 +26,7 @@ This MCP server provides a bridge between AI language models and WeeWX weather s
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/yourusername/weewx-mcp.git
+git clone https://github.com/mymaestro/weewx-mcp.git
 cd weewx-mcp
 ```
 
