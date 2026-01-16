@@ -16,7 +16,6 @@ try:
     from mcp.server.models import InitializationOptions
     from mcp.server import NotificationOptions, Server
     from mcp.server.stdio import stdio_server
-    from mcp.types import Tool, TextContent
 except ImportError:
     print("Error: mcp package not found. Install with: pip install mcp", file=sys.stderr)
     sys.exit(1)
@@ -323,13 +322,11 @@ class WeeWXMCPServer:
         
         self.setup_handlers()
         
-        # Create SSE endpoint
+        # Create SSE transport with /messages endpoint
         sse = SseServerTransport("/messages")
         
         async def handle_sse(request):
-            if request.method != "GET":
-                return Response(status_code=405)
-
+            """Handle SSE connection requests"""
             async with sse.connect_sse(
                 request.scope,
                 request.receive,
@@ -347,19 +344,28 @@ class WeeWXMCPServer:
                         )
                     )
                 )
-
-            # Starlette expects a Response object; return 200 when the stream ends
-            return Response(status_code=200)
+            return Response()
         
-        # Create Starlette app
+        async def handle_messages(request):
+            """Handle POST messages from client"""
+            await sse.handle_post_message(
+                request.scope,
+                request.receive,
+                request._send
+            )
+            return Response()
+        
+        # Create Starlette app with both endpoints
         app = Starlette(
             routes=[
-                Route("/messages", endpoint=handle_sse),
+                Route("/sse", endpoint=handle_sse, methods=["GET"]),
+                Route("/messages", endpoint=handle_messages, methods=["POST"]),
             ]
         )
         
         print(f"Starting WeeWX MCP server on http://{host}:{port}")
-        print(f"SSE endpoint: http://{host}:{port}/messages")
+        print(f"SSE endpoint: http://{host}:{port}/sse")
+        print(f"Messages endpoint: http://{host}:{port}/messages")
         
         # Run the server
         config = uvicorn.Config(app, host=host, port=port, log_level="info")
