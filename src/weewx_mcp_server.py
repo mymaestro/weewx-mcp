@@ -16,6 +16,7 @@ try:
     from mcp.server.models import InitializationOptions
     from mcp.server import NotificationOptions, Server
     from mcp.server.stdio import stdio_server
+    from mcp.types import Tool, TextContent
 except ImportError:
     print("Error: mcp package not found. Install with: pip install mcp", file=sys.stderr)
     sys.exit(1)
