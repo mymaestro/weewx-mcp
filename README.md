@@ -22,6 +22,15 @@ This MCP server provides a bridge between AI language models and WeeWX weather s
 - WeeWX installed and running with a SQLite database
 - pip package manager
 
+### System Dependencies (Linux)
+
+On Debian/Ubuntu (including ARM devices), install build tools and headers needed for packages like `cffi` and `cryptography`:
+
+```bash
+sudo apt update
+sudo apt install -y build-essential libffi-dev python3-dev libssl-dev pkg-config
+```
+
 ### Setup
 
 1. Clone this repository:
@@ -30,15 +39,33 @@ git clone https://github.com/mymaestro/weewx-mcp.git
 cd weewx-mcp
 ```
 
-2. Install dependencies:
+2. Create a virtual environment and install dependencies (recommended):
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -U pip wheel setuptools
 pip install mcp
 ```
 
-For SSE transport support, also install:
+For SSE transport support, also install inside the venv:
 ```bash
-pip install starlette uvicorn
+pip install "starlette>=0.20.0" "uvicorn>=0.20.0"
 ```
+
+### Externally Managed Python (Debian/Ubuntu)
+
+If you see `error: externally-managed-environment` when using system `pip`, use one of:
+
+- Virtual environment (above): Isolated per-project installs.
+- pipx (for global CLI tool installs):
+```bash
+sudo apt update
+sudo apt install -y pipx
+pipx ensurepath
+pipx install mcp
+```
+
+Avoid system-wide `pip install` on Debian/Ubuntu; prefer venv or pipx.
 
 ## Usage
 
@@ -47,13 +74,13 @@ pip install starlette uvicorn
 This is the default mode, suitable for local use or SSH connections:
 
 ```bash
-python weewx_mcp_server.py
+python src/weewx_mcp_server.py
 ```
 
 By default, it looks for WeeWX database at `/var/lib/weewx/weewx.sdb`. To specify a different path:
 
 ```bash
-python weewx_mcp_server.py --db-path /path/to/weewx.sdb
+python src/weewx_mcp_server.py --db-path /path/to/weewx.sdb
 ```
 
 ### Via SSE (HTTP)
@@ -61,7 +88,7 @@ python weewx_mcp_server.py --db-path /path/to/weewx.sdb
 To run the server as an HTTP service:
 
 ```bash
-python weewx_mcp_server.py --transport sse --host 127.0.0.1 --port 8080
+python src/weewx_mcp_server.py --transport sse --host 127.0.0.1 --port 8080
 ```
 
 ## Available Tools
@@ -154,6 +181,19 @@ def query_humidity_range(self, start_date: str, end_date: str) -> dict:
 ```
 
 ## Troubleshooting
+### "ffi.h: No such file or directory" (cffi build failure)
+
+This indicates missing `libffi` development headers. Install system packages, then retry inside your virtual environment:
+
+```bash
+sudo apt update
+sudo apt install -y libffi-dev build-essential python3-dev pkg-config
+source .venv/bin/activate
+pip install --upgrade pip
+pip install mcp
+```
+
+On some ARM architectures or newer Python versions, wheels may be unavailable and source builds are required — the packages above resolve that.
 
 ### Database Not Found
 - Verify WeeWX is installed and running
@@ -166,8 +206,8 @@ def query_humidity_range(self, start_date: str, end_date: str) -> dict:
 - Verify the database isn't locked
 
 ### Import Errors
-- Install MCP with `pip install mcp`
-- For SSE, also install `pip install starlette uvicorn`
+- Activate your virtual environment, then install MCP with `pip install mcp`
+- For SSE, also install `pip install "starlette>=0.20.0" "uvicorn>=0.20.0"`
 
 ## License
 

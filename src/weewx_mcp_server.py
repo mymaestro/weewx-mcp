@@ -318,6 +318,7 @@ class WeeWXMCPServer:
         from mcp.server.sse import SseServerTransport
         from starlette.applications import Starlette
         from starlette.routing import Route
+        from starlette.responses import Response
         import uvicorn
         
         self.setup_handlers()
@@ -326,6 +327,9 @@ class WeeWXMCPServer:
         sse = SseServerTransport("/messages")
         
         async def handle_sse(request):
+            if request.method != "GET":
+                return Response(status_code=405)
+
             async with sse.connect_sse(
                 request.scope,
                 request.receive,
@@ -343,6 +347,9 @@ class WeeWXMCPServer:
                         )
                     )
                 )
+
+            # Starlette expects a Response object; return 200 when the stream ends
+            return Response(status_code=200)
         
         # Create Starlette app
         app = Starlette(
