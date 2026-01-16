@@ -317,17 +317,16 @@ class WeeWXMCPServer:
         """Run the MCP server with SSE transport"""
         from mcp.server.sse import SseServerTransport
         from starlette.applications import Starlette
-        from starlette.routing import Route
-        from starlette.responses import Response
+        from starlette.routing import Route, Mount
         import uvicorn
         
         self.setup_handlers()
         
-        # Create SSE transport with /messages endpoint
+        # Create SSE transport - the endpoint is where messages are posted
         sse = SseServerTransport("/messages")
         
-        async def handle_sse(request):
-            """Handle SSE connection requests"""
+        async def handle_sse_endpoint(request):
+            """Handle the SSE endpoint"""
             async with sse.connect_sse(
                 request.scope,
                 request.receive,
@@ -345,28 +344,12 @@ class WeeWXMCPServer:
                         )
                     )
                 )
-            return Response()
         
-        async def handle_messages(request):
-            """Handle POST messages from client"""
-            await sse.handle_post_message(
-                request.scope,
-                request.receive,
-                request._send
-            )
-            return Response()
-        
-        # Create Starlette app with both endpoints
-        app = Starlette(
-            routes=[
-                Route("/sse", endpoint=handle_sse, methods=["GET"]),
-                Route("/messages", endpoint=handle_messages, methods=["POST"]),
-            ]
-        )
+        # Use the SSE transport's built-in ASGI app
+        app = sse.asgi_app(handle_sse_endpoint)
         
         print(f"Starting WeeWX MCP server on http://{host}:{port}")
-        print(f"SSE endpoint: http://{host}:{port}/sse")
-        print(f"Messages endpoint: http://{host}:{port}/messages")
+        print(f"Connect using: http://{host}:{port}/messages")
         
         # Run the server
         config = uvicorn.Config(app, host=host, port=port, log_level="info")
