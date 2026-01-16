@@ -151,6 +151,24 @@ Compute barometric pressure change and rate over a date range.
 
 **Returns:** start/end pressure, absolute change, hours spanned, and rate per hour.
 
+### find_longest_dry_spell
+Find the longest consecutive stretch of days with zero rainfall in a date range. Uses `archive_day_rain.sum` for per-day totals.
+
+**Parameters:**
+- `start_date`: ISO format (YYYY-MM-DD)
+- `end_date`: ISO format (YYYY-MM-DD)
+
+**Returns:** number of days, start date, end date.
+
+### find_longest_rain_streak
+Find the longest consecutive stretch of days with measured rainfall in a date range. Uses `archive_day_rain.sum` for per-day totals.
+
+**Parameters:**
+- `start_date`: ISO format (YYYY-MM-DD)
+- `end_date`: ISO format (YYYY-MM-DD)
+
+**Returns:** number of days, start date, end date.
+
 ## Configuration
 
 The server reads from your WeeWX SQLite database. Ensure:

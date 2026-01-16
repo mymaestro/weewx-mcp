@@ -323,6 +323,126 @@ class WeeWXMCPServer:
             "start_time": datetime.fromtimestamp(start_row["dateTime"]).strftime("%Y-%m-%d %H:%M"),
             "end_time": datetime.fromtimestamp(end_row["dateTime"]).strftime("%Y-%m-%d %H:%M"),
         }
+
+    def find_longest_dry_spell(self, start_date: str, end_date: str) -> dict:
+        """Find the longest consecutive days with zero rainfall using archive_day_rain"""
+        conn = self.connect_db()
+        cursor = conn.cursor()
+
+        start_ts = int(datetime.fromisoformat(start_date).timestamp())
+        end_ts = int(datetime.fromisoformat(end_date).timestamp())
+
+        cursor.execute(
+            """
+            SELECT dateTime, COALESCE(sum, 0) AS total_rain
+            FROM archive_day_rain
+            WHERE dateTime >= ? AND dateTime <= ?
+            ORDER BY dateTime ASC
+            """,
+            (start_ts, end_ts),
+        )
+        rows = cursor.fetchall()
+        conn.close()
+
+        best_len = 0
+        best_start = None
+        best_end = None
+        cur_len = 0
+        cur_start = None
+        prev_day = None
+
+        for r in rows:
+            day_ts = r["dateTime"]
+            day = datetime.fromtimestamp(day_ts).date()
+            rain_total = r["total_rain"] or 0
+
+            if rain_total == 0:
+                if prev_day is not None and day == (prev_day + timedelta(days=1)):
+                    cur_len += 1
+                else:
+                    cur_len = 1
+                    cur_start = day
+                prev_day = day
+            else:
+                if cur_len > best_len:
+                    best_len = cur_len
+                    best_start = cur_start
+                    best_end = prev_day
+                cur_len = 0
+                cur_start = None
+                prev_day = day
+
+        if cur_len > best_len:
+            best_len = cur_len
+            best_start = cur_start
+            best_end = prev_day
+
+        return {
+            "period": f"{start_date} to {end_date}",
+            "longest_dry_spell_days": best_len,
+            "start_date": best_start.isoformat() if best_start else None,
+            "end_date": best_end.isoformat() if best_end else None,
+        }
+
+    def find_longest_rain_streak(self, start_date: str, end_date: str) -> dict:
+        """Find the longest consecutive days with rainfall using archive_day_rain"""
+        conn = self.connect_db()
+        cursor = conn.cursor()
+
+        start_ts = int(datetime.fromisoformat(start_date).timestamp())
+        end_ts = int(datetime.fromisoformat(end_date).timestamp())
+
+        cursor.execute(
+            """
+            SELECT dateTime, COALESCE(sum, 0) AS total_rain
+            FROM archive_day_rain
+            WHERE dateTime >= ? AND dateTime <= ?
+            ORDER BY dateTime ASC
+            """,
+            (start_ts, end_ts),
+        )
+        rows = cursor.fetchall()
+        conn.close()
+
+        best_len = 0
+        best_start = None
+        best_end = None
+        cur_len = 0
+        cur_start = None
+        prev_day = None
+
+        for r in rows:
+            day_ts = r["dateTime"]
+            day = datetime.fromtimestamp(day_ts).date()
+            rain_total = r["total_rain"] or 0
+
+            if rain_total > 0:
+                if prev_day is not None and day == (prev_day + timedelta(days=1)):
+                    cur_len += 1
+                else:
+                    cur_len = 1
+                    cur_start = day
+                prev_day = day
+            else:
+                if cur_len > best_len:
+                    best_len = cur_len
+                    best_start = cur_start
+                    best_end = prev_day
+                cur_len = 0
+                cur_start = None
+                prev_day = day
+
+        if cur_len > best_len:
+            best_len = cur_len
+            best_start = cur_start
+            best_end = prev_day
+
+        return {
+            "period": f"{start_date} to {end_date}",
+            "longest_rain_streak_days": best_len,
+            "start_date": best_start.isoformat() if best_start else None,
+            "end_date": best_end.isoformat() if best_end else None,
+        }
     
     def setup_handlers(self):
         """Setup MCP tool handlers"""
@@ -451,6 +571,30 @@ class WeeWXMCPServer:
                         },
                         "required": ["start_date", "end_date"]
                     }
+                ),
+                Tool(
+                    name="find_longest_dry_spell",
+                    description="Find the longest consecutive days with zero rainfall",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "start_date": {"type": "string", "description": "Start date (YYYY-MM-DD)"},
+                            "end_date": {"type": "string", "description": "End date (YYYY-MM-DD)"}
+                        },
+                        "required": ["start_date", "end_date"]
+                    }
+                ),
+                Tool(
+                    name="find_longest_rain_streak",
+                    description="Find the longest consecutive days with rainfall",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "start_date": {"type": "string", "description": "Start date (YYYY-MM-DD)"},
+                            "end_date": {"type": "string", "description": "End date (YYYY-MM-DD)"}
+                        },
+                        "required": ["start_date", "end_date"]
+                    }
                 )
             ]
         
@@ -496,6 +640,18 @@ class WeeWXMCPServer:
 
                 elif name == "query_pressure_trend":
                     result = self.query_pressure_trend(
+                        arguments["start_date"],
+                        arguments["end_date"]
+                    )
+                
+                elif name == "find_longest_dry_spell":
+                    result = self.find_longest_dry_spell(
+                        arguments["start_date"],
+                        arguments["end_date"]
+                    )
+
+                elif name == "find_longest_rain_streak":
+                    result = self.find_longest_rain_streak(
                         arguments["start_date"],
                         arguments["end_date"]
                     )
