@@ -178,6 +178,151 @@ class WeeWXMCPServer:
             })
         
         return events
+
+    def query_humidity_range(self, start_date: str, end_date: str) -> dict:
+        """Get humidity statistics for a date range"""
+        conn = self.connect_db()
+        cursor = conn.cursor()
+
+        start_ts = int(datetime.fromisoformat(start_date).timestamp())
+        end_ts = int(datetime.fromisoformat(end_date).timestamp())
+
+        cursor.execute(
+            """
+            SELECT 
+                MIN(outHumidity) as min_humidity,
+                MAX(outHumidity) as max_humidity,
+                AVG(outHumidity) as avg_humidity
+            FROM archive 
+            WHERE dateTime >= ? AND dateTime <= ?
+            """,
+            (start_ts, end_ts),
+        )
+
+        row = cursor.fetchone()
+
+        cursor.execute(
+            """
+            SELECT dateTime, outHumidity 
+            FROM archive 
+            WHERE dateTime >= ? AND dateTime <= ?
+            ORDER BY outHumidity DESC 
+            LIMIT 1
+            """,
+            (start_ts, end_ts),
+        )
+        max_row = cursor.fetchone()
+
+        cursor.execute(
+            """
+            SELECT dateTime, outHumidity 
+            FROM archive 
+            WHERE dateTime >= ? AND dateTime <= ?
+            ORDER BY outHumidity ASC 
+            LIMIT 1
+            """,
+            (start_ts, end_ts),
+        )
+        min_row = cursor.fetchone()
+
+        conn.close()
+
+        return {
+            "period": f"{start_date} to {end_date}",
+            "min_humidity": row["min_humidity"],
+            "max_humidity": row["max_humidity"],
+            "avg_humidity": round(row["avg_humidity"], 1) if row["avg_humidity"] is not None else None,
+            "highest_humidity_time": datetime.fromtimestamp(max_row["dateTime"]).strftime("%Y-%m-%d %H:%M") if max_row else None,
+            "lowest_humidity_time": datetime.fromtimestamp(min_row["dateTime"]).strftime("%Y-%m-%d %H:%M") if min_row else None,
+        }
+
+    def query_daily_rainfall(self, start_date: str, end_date: str) -> dict:
+        """Get total rainfall per day for a date range"""
+        conn = self.connect_db()
+        cursor = conn.cursor()
+
+        start_ts = int(datetime.fromisoformat(start_date).timestamp())
+        end_ts = int(datetime.fromisoformat(end_date).timestamp())
+
+        cursor.execute(
+            """
+            SELECT date(dateTime, 'unixepoch') as day, SUM(rain) as total_rain
+            FROM archive
+            WHERE dateTime >= ? AND dateTime <= ?
+            GROUP BY day
+            ORDER BY day ASC
+            """,
+            (start_ts, end_ts),
+        )
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        daily = [{"date": r["day"], "total_rainfall": round(r["total_rain"], 2) if r["total_rain"] else 0} for r in rows]
+        overall_total = round(sum(d["total_rainfall"] for d in daily), 2)
+
+        return {
+            "period": f"{start_date} to {end_date}",
+            "overall_total_rainfall": overall_total,
+            "daily": daily,
+        }
+
+    def query_pressure_trend(self, start_date: str, end_date: str) -> dict:
+        """Compute barometric pressure change and rate over a date range"""
+        conn = self.connect_db()
+        cursor = conn.cursor()
+
+        start_ts = int(datetime.fromisoformat(start_date).timestamp())
+        end_ts = int(datetime.fromisoformat(end_date).timestamp())
+
+        cursor.execute(
+            """
+            SELECT barometer as pressure, dateTime
+            FROM archive
+            WHERE dateTime >= ? AND dateTime <= ?
+            ORDER BY dateTime ASC
+            LIMIT 1
+            """,
+            (start_ts, end_ts),
+        )
+        start_row = cursor.fetchone()
+
+        cursor.execute(
+            """
+            SELECT barometer as pressure, dateTime
+            FROM archive
+            WHERE dateTime >= ? AND dateTime <= ?
+            ORDER BY dateTime DESC
+            LIMIT 1
+            """,
+            (start_ts, end_ts),
+        )
+        end_row = cursor.fetchone()
+
+        conn.close()
+
+        if not start_row or not end_row:
+            return {
+                "period": f"{start_date} to {end_date}",
+                "error": "No data in specified range",
+            }
+
+        start_p = start_row["pressure"]
+        end_p = end_row["pressure"]
+        delta = (end_p - start_p) if (start_p is not None and end_p is not None) else None
+        hours = (end_row["dateTime"] - start_row["dateTime"]) / 3600.0
+        rate_per_hour = (delta / hours) if (delta is not None and hours > 0) else None
+
+        return {
+            "period": f"{start_date} to {end_date}",
+            "start_pressure": start_p,
+            "end_pressure": end_p,
+            "change": delta,
+            "hours": round(hours, 2),
+            "rate_per_hour": round(rate_per_hour, 3) if rate_per_hour is not None else None,
+            "start_time": datetime.fromtimestamp(start_row["dateTime"]).strftime("%Y-%m-%d %H:%M"),
+            "end_time": datetime.fromtimestamp(end_row["dateTime"]).strftime("%Y-%m-%d %H:%M"),
+        }
     
     def setup_handlers(self):
         """Setup MCP tool handlers"""
@@ -252,6 +397,60 @@ class WeeWXMCPServer:
                         },
                         "required": ["min_speed", "start_date", "end_date"]
                     }
+                ),
+                Tool(
+                    name="query_humidity_range",
+                    description="Get humidity statistics (min, max, average) for a date range",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "start_date": {
+                                "type": "string",
+                                "description": "Start date in ISO format (YYYY-MM-DD)"
+                            },
+                            "end_date": {
+                                "type": "string",
+                                "description": "End date in ISO format (YYYY-MM-DD)"
+                            }
+                        },
+                        "required": ["start_date", "end_date"]
+                    }
+                ),
+                Tool(
+                    name="query_daily_rainfall",
+                    description="Get total rainfall per day for a date range",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "start_date": {
+                                "type": "string",
+                                "description": "Start date in ISO format (YYYY-MM-DD)"
+                            },
+                            "end_date": {
+                                "type": "string",
+                                "description": "End date in ISO format (YYYY-MM-DD)"
+                            }
+                        },
+                        "required": ["start_date", "end_date"]
+                    }
+                ),
+                Tool(
+                    name="query_pressure_trend",
+                    description="Compute barometric pressure change and rate over a date range",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "start_date": {
+                                "type": "string",
+                                "description": "Start date in ISO format (YYYY-MM-DD)"
+                            },
+                            "end_date": {
+                                "type": "string",
+                                "description": "End date in ISO format (YYYY-MM-DD)"
+                            }
+                        },
+                        "required": ["start_date", "end_date"]
+                    }
                 )
             ]
         
@@ -259,6 +458,8 @@ class WeeWXMCPServer:
         async def handle_call_tool(name: str, arguments: dict | None) -> Sequence[TextContent]:
             """Handle tool execution"""
             try:
+                if arguments is None:
+                    arguments = {}
                 if name == "get_current_conditions":
                     result = self.get_current_conditions()
                     
@@ -277,6 +478,24 @@ class WeeWXMCPServer:
                 elif name == "find_wind_events":
                     result = self.find_wind_events(
                         arguments["min_speed"],
+                        arguments["start_date"],
+                        arguments["end_date"]
+                    )
+                
+                elif name == "query_humidity_range":
+                    result = self.query_humidity_range(
+                        arguments["start_date"],
+                        arguments["end_date"]
+                    )
+
+                elif name == "query_daily_rainfall":
+                    result = self.query_daily_rainfall(
+                        arguments["start_date"],
+                        arguments["end_date"]
+                    )
+
+                elif name == "query_pressure_trend":
+                    result = self.query_pressure_trend(
                         arguments["start_date"],
                         arguments["end_date"]
                     )

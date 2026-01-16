@@ -124,6 +124,33 @@ Find instances where wind speed exceeded a threshold within a date range.
 - `start_date`: ISO format (YYYY-MM-DD)
 - `end_date`: ISO format (YYYY-MM-DD)
 
+### query_humidity_range
+Get humidity statistics (min, max, average) for a specified date range.
+
+**Parameters:**
+- `start_date`: ISO format (YYYY-MM-DD)
+- `end_date`: ISO format (YYYY-MM-DD)
+
+**Returns:** min/max/avg humidity and timestamps of peak/low values.
+
+### query_daily_rainfall
+Get total rainfall aggregated per day over a date range.
+
+**Parameters:**
+- `start_date`: ISO format (YYYY-MM-DD)
+- `end_date`: ISO format (YYYY-MM-DD)
+
+**Returns:** overall total plus a list of `{date, total_rainfall}`.
+
+### query_pressure_trend
+Compute barometric pressure change and rate over a date range.
+
+**Parameters:**
+- `start_date`: ISO format (YYYY-MM-DD)
+- `end_date`: ISO format (YYYY-MM-DD)
+
+**Returns:** start/end pressure, absolute change, hours spanned, and rate per hour.
+
 ## Configuration
 
 The server reads from your WeeWX SQLite database. Ensure:
