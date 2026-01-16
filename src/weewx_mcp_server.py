@@ -324,6 +324,116 @@ class WeeWXMCPServer:
             "end_time": datetime.fromtimestamp(end_row["dateTime"]).strftime("%Y-%m-%d %H:%M"),
         }
 
+    def _bucket_expr(self, granularity: str) -> str:
+        if granularity == "daily":
+            return "date(dateTime, 'unixepoch')"
+        if granularity == "weekly":
+            return "strftime('%Y-%W', dateTime, 'unixepoch')"
+        if granularity == "monthly":
+            return "strftime('%Y-%m', dateTime, 'unixepoch')"
+        raise ValueError("granularity must be one of: daily, weekly, monthly")
+
+    def summarize_temperature(self, granularity: str, start_date: str, end_date: str) -> list[dict]:
+        """Summarize temperature by bucket using archive_day_outTemp (min/max/sum/count)."""
+        bucket = self._bucket_expr(granularity)
+        conn = self.connect_db()
+        cursor = conn.cursor()
+        start_ts = int(datetime.fromisoformat(start_date).timestamp())
+        end_ts = int(datetime.fromisoformat(end_date).timestamp())
+        sql = f"""
+            SELECT {bucket} AS bucket,
+                   MIN(min) AS min_temp,
+                   MAX(max) AS max_temp,
+                   ROUND(SUM(sum)/NULLIF(SUM(count), 0), 1) AS avg_temp
+            FROM archive_day_outTemp
+            WHERE dateTime >= ? AND dateTime <= ?
+            GROUP BY bucket
+            ORDER BY bucket ASC
+        """
+        cursor.execute(sql, (start_ts, end_ts))
+        rows = cursor.fetchall()
+        conn.close()
+        return [
+            {
+                "bucket": r["bucket"],
+                "min": r["min_temp"],
+                "max": r["max_temp"],
+                "avg": r["avg_temp"],
+            }
+            for r in rows
+        ]
+
+    def summarize_rain(self, granularity: str, start_date: str, end_date: str) -> list[dict]:
+        """Summarize rainfall by bucket using archive_day_rain (sum)."""
+        bucket = self._bucket_expr(granularity)
+        conn = self.connect_db()
+        cursor = conn.cursor()
+        start_ts = int(datetime.fromisoformat(start_date).timestamp())
+        end_ts = int(datetime.fromisoformat(end_date).timestamp())
+        sql = f"""
+            SELECT {bucket} AS bucket,
+                   ROUND(SUM(sum), 2) AS total_rain,
+                   COUNT(*) AS days,
+                   ROUND(SUM(sum)/COUNT(*), 2) AS avg_daily_rain
+            FROM archive_day_rain
+            WHERE dateTime >= ? AND dateTime <= ?
+            GROUP BY bucket
+            ORDER BY bucket ASC
+        """
+        cursor.execute(sql, (start_ts, end_ts))
+        rows = cursor.fetchall()
+        conn.close()
+        return [
+            {
+                "bucket": r["bucket"],
+                "total_rain": r["total_rain"],
+                "days": r["days"],
+                "avg_daily_rain": r["avg_daily_rain"],
+            }
+            for r in rows
+        ]
+
+    def summarize_wind(self, granularity: str, start_date: str, end_date: str) -> list[dict]:
+        """Summarize wind by bucket: avg wind speed (archive_day_windSpeed) and max gust (archive_day_windGust)."""
+        bucket = self._bucket_expr(granularity)
+        conn = self.connect_db()
+        cursor = conn.cursor()
+        start_ts = int(datetime.fromisoformat(start_date).timestamp())
+        end_ts = int(datetime.fromisoformat(end_date).timestamp())
+
+        sql_speed = f"""
+            SELECT {bucket} AS bucket,
+                   ROUND(SUM(sum)/NULLIF(SUM(count), 0), 2) AS avg_wind_speed
+            FROM archive_day_windSpeed
+            WHERE dateTime >= ? AND dateTime <= ?
+            GROUP BY bucket
+        """
+        cursor.execute(sql_speed, (start_ts, end_ts))
+        speed_rows = cursor.fetchall()
+
+        sql_gust = f"""
+            SELECT {bucket} AS bucket,
+                   MAX(max) AS max_gust
+            FROM archive_day_windGust
+            WHERE dateTime >= ? AND dateTime <= ?
+            GROUP BY bucket
+        """
+        cursor.execute(sql_gust, (start_ts, end_ts))
+        gust_rows = cursor.fetchall()
+        conn.close()
+
+        # Merge by bucket
+        out: dict[str, dict] = {}
+        for r in speed_rows:
+            out[r["bucket"]] = {"bucket": r["bucket"], "avg_wind_speed": r["avg_wind_speed"], "max_gust": None}
+        for r in gust_rows:
+            bucket_key = r["bucket"]
+            if bucket_key in out:
+                out[bucket_key]["max_gust"] = r["max_gust"]
+            else:
+                out[bucket_key] = {"bucket": bucket_key, "avg_wind_speed": None, "max_gust": r["max_gust"]}
+        return [out[k] for k in sorted(out.keys())]
+
     def find_longest_dry_spell(self, start_date: str, end_date: str) -> dict:
         """Find the longest consecutive days with zero rainfall using archive_day_rain"""
         conn = self.connect_db()
@@ -573,6 +683,45 @@ class WeeWXMCPServer:
                     }
                 ),
                 Tool(
+                    name="summarize_temperature",
+                    description="Summarize temperature by daily/weekly/monthly buckets",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "granularity": {"type": "string", "enum": ["daily", "weekly", "monthly"]},
+                            "start_date": {"type": "string", "description": "Start date (YYYY-MM-DD)"},
+                            "end_date": {"type": "string", "description": "End date (YYYY-MM-DD)"}
+                        },
+                        "required": ["granularity", "start_date", "end_date"]
+                    }
+                ),
+                Tool(
+                    name="summarize_rain",
+                    description="Summarize rainfall by daily/weekly/monthly buckets",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "granularity": {"type": "string", "enum": ["daily", "weekly", "monthly"]},
+                            "start_date": {"type": "string", "description": "Start date (YYYY-MM-DD)"},
+                            "end_date": {"type": "string", "description": "End date (YYYY-MM-DD)"}
+                        },
+                        "required": ["granularity", "start_date", "end_date"]
+                    }
+                ),
+                Tool(
+                    name="summarize_wind",
+                    description="Summarize wind speed and gusts by daily/weekly/monthly buckets",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "granularity": {"type": "string", "enum": ["daily", "weekly", "monthly"]},
+                            "start_date": {"type": "string", "description": "Start date (YYYY-MM-DD)"},
+                            "end_date": {"type": "string", "description": "End date (YYYY-MM-DD)"}
+                        },
+                        "required": ["granularity", "start_date", "end_date"]
+                    }
+                ),
+                Tool(
                     name="find_longest_dry_spell",
                     description="Find the longest consecutive days with zero rainfall",
                     inputSchema={
@@ -652,6 +801,27 @@ class WeeWXMCPServer:
 
                 elif name == "find_longest_rain_streak":
                     result = self.find_longest_rain_streak(
+                        arguments["start_date"],
+                        arguments["end_date"]
+                    )
+
+                elif name == "summarize_temperature":
+                    result = self.summarize_temperature(
+                        arguments["granularity"],
+                        arguments["start_date"],
+                        arguments["end_date"]
+                    )
+
+                elif name == "summarize_rain":
+                    result = self.summarize_rain(
+                        arguments["granularity"],
+                        arguments["start_date"],
+                        arguments["end_date"]
+                    )
+
+                elif name == "summarize_wind":
+                    result = self.summarize_wind(
+                        arguments["granularity"],
                         arguments["start_date"],
                         arguments["end_date"]
                     )

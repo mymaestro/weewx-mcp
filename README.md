@@ -169,6 +169,90 @@ Find the longest consecutive stretch of days with measured rainfall in a date ra
 
 **Returns:** number of days, start date, end date.
 
+### summarize_temperature
+Summarize temperature statistics aggregated by daily, weekly, or monthly buckets. Uses `archive_day_outTemp`.
+
+**Parameters:**
+- `granularity`: One of `daily`, `weekly`, `monthly`
+- `start_date`: ISO format (YYYY-MM-DD)
+- `end_date`: ISO format (YYYY-MM-DD)
+
+**Returns:** Array of buckets with `min`, `max`, `avg` temperature.
+
+### summarize_rain
+Summarize rainfall aggregated by daily, weekly, or monthly buckets. Uses `archive_day_rain`.
+
+**Parameters:**
+- `granularity`: One of `daily`, `weekly`, `monthly`
+- `start_date`: ISO format (YYYY-MM-DD)
+- `end_date`: ISO format (YYYY-MM-DD)
+
+**Returns:** Array of buckets with `total_rain`, `days`, `avg_daily_rain`.
+
+### summarize_wind
+Summarize wind statistics aggregated by daily, weekly, or monthly buckets. Uses `archive_day_windSpeed` and `archive_day_windGust`.
+
+**Parameters:**
+- `granularity`: One of `daily`, `weekly`, `monthly`
+- `start_date`: ISO format (YYYY-MM-DD)
+- `end_date`: ISO format (YYYY-MM-DD)
+
+**Returns:** Array of buckets with `avg_wind_speed` and `max_gust`.
+
+## Examples
+
+### Quick Test via Python
+
+If you have a local Python environment with the server code:
+
+```bash
+# Activate your virtual environment
+source .venv/bin/activate
+
+# Get current conditions
+python -c 'from src.weewx_mcp_server import WeeWXMCPServer; s=WeeWXMCPServer(); import json; print(json.dumps(s.get_current_conditions(), indent=2))'
+
+# Temperature range for January 2025
+python -c 'from src.weewx_mcp_server import WeeWXMCPServer; s=WeeWXMCPServer(); import json; print(json.dumps(s.query_temperature_range("2025-01-01","2025-01-31"), indent=2))'
+
+# Longest dry spell in 2025
+python -c 'from src.weewx_mcp_server import WeeWXMCPServer; s=WeeWXMCPServer(); import json; print(json.dumps(s.find_longest_dry_spell("2025-01-01","2025-12-31"), indent=2))'
+
+# Monthly temperature summary for 2025
+python -c 'from src.weewx_mcp_server import WeeWXMCPServer; s=WeeWXMCPServer(); import json; print(json.dumps(s.summarize_temperature("monthly","2025-01-01","2025-12-31"), indent=2))'
+
+# Weekly rain summary for June 2025
+python -c 'from src.weewx_mcp_server import WeeWXMCPServer; s=WeeWXMCPServer(); import json; print(json.dumps(s.summarize_rain("weekly","2025-06-01","2025-06-30"), indent=2))'
+```
+
+### Testing SSE Endpoint
+
+Start the server:
+
+```bash
+python src/weewx_mcp_server.py --transport sse --host 127.0.0.1 --port 8080
+```
+
+Test the SSE endpoint from another terminal:
+
+```bash
+# Check SSE stream is active
+curl -v http://127.0.0.1:8080/sse
+
+# Should return HTTP/1.1 200 OK and keep connection open
+```
+
+### Natural Language Queries via Claude
+
+Once connected to Claude Code or Claude Desktop, you can ask natural language questions:
+
+- "What's the current temperature and humidity?"
+- "Show me the hottest and coldest days in January 2025"
+- "What was the longest dry spell last year?"
+- "Give me monthly rainfall totals for 2025"
+- "Find all days when wind speed exceeded 25 mph in March"
+- "Show weekly temperature trends for the summer months"
+
 ## Configuration
 
 The server reads from your WeeWX SQLite database. Ensure:
