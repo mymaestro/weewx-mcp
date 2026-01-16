@@ -91,6 +91,12 @@ To run the server as an HTTP service:
 python src/weewx_mcp_server.py --transport sse --host 127.0.0.1 --port 8080
 ```
 
+The SSE transport exposes two endpoints:
+- **SSE endpoint** (`/sse`): Client connects here via GET for the event stream
+- **Messages endpoint** (`/messages/`): For posting messages back to the server
+
+Connect your MCP client to `http://127.0.0.1:8080/sse` (or use `0.0.0.0` for remote access).
+
 ## Available Tools
 
 ### get_current_conditions
@@ -130,7 +136,34 @@ The server reads from your WeeWX SQLite database. Ensure:
 
 This MCP server integrates with Claude and other language models that support MCP. Configuration varies by platform:
 
-- **Claude Desktop**: Add to `claude_desktop_config.json`
+### Claude Code
+
+Add the server using the CLI:
+
+```bash
+claude mcp add --transport sse weewx http://127.0.0.1:8080/sse
+```
+
+For remote servers, replace `127.0.0.1` with your server's IP address.
+
+### Claude Desktop
+
+Add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "weewx": {
+      "command": "python",
+      "args": ["/path/to/weewx-mcp/src/weewx_mcp_server.py", "--db-path", "/var/lib/weewx/weewx.sdb"],
+      "env": {}
+    }
+  }
+}
+```
+
+### Other Clients
+
 - **Claude API**: Use with MCP client configuration
 - **Other LLMs**: Follow their MCP integration documentation
 
