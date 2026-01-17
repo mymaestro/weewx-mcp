@@ -359,6 +359,10 @@ WEBUI_OLLAMA_BASE_URL=http://ollama:11434
 | **Setup Complexity** | Medium | Low (with Docker) |
 | **Model Selection** | Fixed | Flexible |
 
+## Alternative: WeeWX Native Skin Approach
+
+**Note**: There's also a lightweight alternative that doesn't require Ollama. See [WEEWX_NATIVE_SKIN_ARCHITECTURE.md](WEEWX_NATIVE_SKIN_ARCHITECTURE.md) for a solution that uses WeeWX's native skin and service extension system to provide a modern web dashboard with dynamic querying—no LLM or significant hardware required.
+
 ## Conclusion
 
 This integrated architecture provides a practical, user-friendly solution for weather data intelligence while maintaining the technical rigor of the MCP protocol. By layering Open WebUI and Ollama on top of weewx-mcp, we create a system that is:
@@ -370,6 +374,8 @@ This integrated architecture provides a practical, user-friendly solution for we
 - **Extensible** for future weather analysis capabilities
 
 The phased implementation approach allows for incremental development with testable milestones and clear deliverables.
+
+This approach is ideal for users with adequate hardware and who want advanced natural language capabilities. For users with limited hardware or simpler requirements, the native WeeWX skin approach offers a lightweight alternative.
 
 ## References & Resources
 

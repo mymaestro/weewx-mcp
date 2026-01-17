@@ -6,6 +6,18 @@ An MCP (Model Context Protocol) server that enables natural language queries to 
 
 This MCP server provides a bridge between AI language models and WeeWX weather stations, allowing you to query your personal weather data using natural language. Ask questions like "What was the hottest day last week?" or "When did we have high wind speeds?" and get instant answers from your weather station database.
 
+### 🌐 Want a Web Interface?
+
+We have three complementary web interface approaches for different needs:
+
+1. **[WeeWX Hybrid Architecture](WEEWX_HYBRID_ARCHITECTURE.md)** ⭐ **Recommended** - Modern dashboard + optional Claude API for intelligent natural language queries. Perfect balance of simplicity and power. Light weight, low cost, excellent NLP.
+
+2. **[WeeWX + Ollama + Open WebUI Integration](WEEWX_OLLAMA_OPENWEBUI_INTEGRATION.md)** - Fully local conversational AI (no API keys needed). Best if you have adequate hardware (8GB+ RAM) and want complete offline capability.
+
+3. **[WeeWX Native Skin + Service Extension](WEEWX_NATIVE_SKIN_ARCHITECTURE.md)** - Pure lightweight dashboard with dynamic querying (no NLP). Best for minimal hardware or users who prefer structured queries over conversation.
+
+All three maintain full privacy, require no cloud data storage, and integrate seamlessly with weewx-mcp.
+
 ## Features
 
 - **Current Conditions**: Get the most recent weather readings from your station
