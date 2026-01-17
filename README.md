@@ -6,17 +6,96 @@ An MCP (Model Context Protocol) server that enables natural language queries to 
 
 This MCP server provides a bridge between AI language models and WeeWX weather stations, allowing you to query your personal weather data using natural language. Ask questions like "What was the hottest day last week?" or "When did we have high wind speeds?" and get instant answers from your weather station database.
 
-### 🌐 Want a Web Interface?
+### 🌐 Web Interface Options
 
-We have three complementary web interface approaches for different needs:
+This project offers **three architectural approaches** for adding a modern web interface to your WeeWX weather station. Each is designed for different use cases, hardware capabilities, and preferences:
 
-1. **[WeeWX Hybrid Architecture](WEEWX_HYBRID_ARCHITECTURE.md)** ⭐ **Recommended** - Modern dashboard + optional Claude API for intelligent natural language queries. Perfect balance of simplicity and power. Light weight, low cost, excellent NLP.
+#### 1. [WeeWX Hybrid Architecture](WEEWX_HYBRID_ARCHITECTURE.md) ⭐ **Recommended**
 
-2. **[WeeWX + Ollama + Open WebUI Integration](WEEWX_OLLAMA_OPENWEBUI_INTEGRATION.md)** - Fully local conversational AI (no API keys needed). Best if you have adequate hardware (8GB+ RAM) and want complete offline capability.
+**Best for: Most users wanting balance of simplicity and intelligence**
 
-3. **[WeeWX Native Skin + Service Extension](WEEWX_NATIVE_SKIN_ARCHITECTURE.md)** - Pure lightweight dashboard with dynamic querying (no NLP). Best for minimal hardware or users who prefer structured queries over conversation.
+- 📱 Mobile-first responsive dashboard with pre-generated charts
+- 🤖 Optional Claude API integration for natural language queries
+- 💡 Lightweight (runs on Raspberry Pi)
+- 💵 Pay-as-you-go ($1-20/month typical usage)
+- ⚡ Fast setup (~25 minutes)
+- 📊 Works offline for dashboard, online for NLP queries
+- 🎯 Perfect balance: simple infrastructure + smart AI when needed
 
-All three maintain full privacy, require no cloud data storage, and integrate seamlessly with weewx-mcp.
+**Key Features:**
+- Static dashboard with current conditions and historical charts
+- Natural language query interface: "What was the hottest day last week?"
+- Direct database API endpoints for programmatic access
+- PWA-ready, install to mobile home screen
+- Dark mode, accessibility features
+
+**Use this if:** You want a modern dashboard that occasionally understands natural language, without heavy infrastructure.
+
+---
+
+#### 2. [WeeWX + Ollama + Open WebUI Integration](WEEWX_OLLAMA_OPENWEBUI_INTEGRATION.md)
+
+**Best for: Power users with good hardware who want fully local AI**
+
+- 🏠 100% local conversational AI (no API keys)
+- 💬 Full chat interface with conversation history
+- 🖥️ Requires 8GB+ RAM for Ollama models
+- 🐳 Docker-based deployment
+- 🔒 Complete offline capability
+- 🆓 No per-query costs
+
+**Key Features:**
+- Full-featured chat interface via Open WebUI
+- Multiple LLM model support (Mistral, Llama, etc.)
+- Conversation context and history
+- Tool/function calling for weather data access
+- Weather-specific system prompts
+
+**Use this if:** You have adequate hardware, want completely offline AI, and prefer a conversational interface.
+
+---
+
+#### 3. [WeeWX Native Skin + Service Extension](WEEWX_NATIVE_SKIN_ARCHITECTURE.md)
+
+**Best for: Minimal hardware, maximum simplicity**
+
+- 🪶 Ultra-lightweight (256MB RAM sufficient)
+- 🚀 Fastest setup (~20 minutes)
+- 📱 Mobile-responsive dashboard
+- 🎨 Leverages WeeWX's native Cheetah templates
+- 🆓 Zero ongoing costs
+- ⚡ Pre-generated charts load instantly
+
+**Key Features:**
+- Clean dashboard using WeeWX skin system
+- REST API for structured queries
+- Custom chart generation on-demand
+- No external dependencies
+- Built-in unit conversions and aggregations
+
+**Use this if:** You want a simple, fast dashboard without AI complexity, or are running on constrained hardware (Raspberry Pi, etc.).
+
+---
+
+### Comparison Table
+
+| Feature | Hybrid | Ollama+WebUI | Native Skin |
+|---------|--------|--------------|-------------|
+| **Interface** | Web Dashboard + Query Form | Full Chat UI | Web Dashboard |
+| **NLP Quality** | Excellent (Claude) | Good (Ollama) | None |
+| **Hardware** | Minimal | 8GB+ RAM | Minimal (256MB) |
+| **Setup Time** | 25 min | 45 min | 20 min |
+| **Cost** | $1-20/month | Free | Free |
+| **Offline** | Dashboard only | Full | Full |
+| **Mobile-Friendly** | ✓ PWA-ready | ✓ | ✓ PWA-ready |
+| **Ideal For** | Most users | Power users | Simplicity lovers |
+
+All three approaches:
+- ✅ Maintain full data privacy (data stays local)
+- ✅ Integrate seamlessly with the core weewx-mcp server
+- ✅ Support mobile, tablet, and desktop devices
+- ✅ Offer dark mode and accessibility features
+- ✅ Can coexist (run multiple approaches simultaneously)
 
 ## Features
 

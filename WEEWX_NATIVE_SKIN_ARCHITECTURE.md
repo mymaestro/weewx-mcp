@@ -373,16 +373,119 @@ touch ~/weewx/skins/weather-dashboard/skin.conf
 - `base.html.tmpl`: Template base for inheritance
 
 #### 1.3 Create Responsive CSS
-- Modern, mobile-first design
-- Dark/light theme support
-- Responsive grid layout
-- Accessible color scheme
+- **Mobile-first design approach**
+- **Touch-optimized interactions** (44px minimum touch targets)
+- **Responsive grid layout** (stacks on mobile, 2-col tablet, 3-col desktop)
+- **Dark/light theme support** with `prefers-color-scheme`
+- **Accessible color scheme** with high contrast support
+- **Viewport meta tags** for proper mobile scaling
+- **Swipe-friendly charts** with horizontal scroll and momentum
+- **Progressive enhancement** - works without JavaScript
+
+**Mobile-First CSS Example**:
+```css
+/* Base mobile styles */
+body {
+    font-size: 16px; /* Prevents zoom on iOS input focus */
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    width: 100%;
+    padding: 16px;
+}
+
+/* Touch-friendly buttons */
+button, a.button {
+    min-height: 44px; /* iOS HIG minimum */
+    min-width: 44px;
+    padding: 12px 24px;
+    font-size: 16px;
+}
+
+/* Responsive grid */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Mobile: single column */
+    gap: 16px;
+}
+
+/* Tablet: 2 columns */
+@media (min-width: 640px) {
+    .container {
+        padding: 24px;
+        max-width: 640px;
+        margin: 0 auto;
+    }
+    .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Desktop: 3 columns */
+@media (min-width: 1024px) {
+    .container {
+        max-width: 1024px;
+    }
+    .metrics-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #1f2937;
+        color: #f9fafb;
+    }
+}
+```
 
 #### 1.4 Build Interactive JavaScript
 - Form submission for date range queries
 - API client for REST calls
 - Chart zooming/interactivity
 - Theme switching
+- Touch gesture support
+- Progressive Web App (PWA) service worker
+- Loading indicators and smooth scrolling
+
+**Mobile-Optimized JavaScript**:
+```javascript
+// Smooth scroll to element (mobile-friendly)
+function smoothScrollTo(element) {
+    element.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'nearest' 
+    });
+}
+
+// Touch-friendly form handling
+document.getElementById('queryForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // Provide immediate feedback
+    const button = e.target.querySelector('button');
+    button.disabled = true;
+    button.textContent = 'Loading...';
+    
+    // ... API call ...
+    
+    // Scroll result into view on mobile
+    smoothScrollTo(document.getElementById('result'));
+    
+    button.disabled = false;
+    button.textContent = 'Submit';
+});
+
+// PWA Service Worker Registration
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(registration => {
+        console.log('PWA ready for offline use');
+    });
+}
+```
 
 ### Phase 2: Service Extension (1 week)
 
@@ -451,9 +554,13 @@ mkdir -p ~/weewx/extensions/weather-api/bin/user
 - **Today Summary**: High/low/avg for current day
 - **History Browser**: View past days/weeks/months
 - **Pre-Generated Charts**: Daily, weekly, monthly, yearly trends
-- **Responsive Design**: Works on desktop, tablet, phone
+- **Responsive Design**: Mobile-first, works on phones/tablets/desktop
+- **Touch-Optimized**: 44px minimum tap targets, swipe gestures
+- **PWA-Ready**: Install to home screen like native app
+- **Offline Capable**: View cached data without connection
 - **Timezone-Aware**: Converts to user's local time
 - **Unit Conversion**: Automatic F/C, mph/kph, in/mm conversions
+- **Dark Mode**: Respects system preference automatically
 
 ### Dynamic API Features
 - **Real-Time Data**: Live weather readings

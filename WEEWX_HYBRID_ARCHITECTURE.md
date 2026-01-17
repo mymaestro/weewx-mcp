@@ -419,6 +419,17 @@ class WeatherAPIService(StdEngine):
 
 ```html
 <!-- In index.html.tmpl or separate query.html.tmpl -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Weather Dashboard</title>
+</head>
+<body>
+
 <div class="query-panel">
     <h2>Ask About Your Weather</h2>
     <form id="queryForm">
@@ -426,12 +437,18 @@ class WeatherAPIService(StdEngine):
             id="queryInput" 
             placeholder="Examples: What was the hottest day last week? When did it last rain? How humid has it been?"
             rows="3"></textarea>
-        <button type="submit">Ask</button>
+        <button type="submit" class="btn-primary">Ask</button>
     </form>
     
     <div id="queryResult" class="hidden">
         <h3>Response</h3>
         <p id="resultText"></p>
+    </div>
+    
+    <!-- Loading indicator -->
+    <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <p>Thinking...</p>
     </div>
 </div>
 
@@ -440,6 +457,12 @@ document.getElementById('queryForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const query = document.getElementById('queryInput').value;
+    const loading = document.getElementById('loading');
+    const result = document.getElementById('queryResult');
+    
+    // Show loading, hide previous results
+    loading.classList.remove('hidden');
+    result.classList.add('hidden');
     
     try {
         const response = await fetch('/api/query', {
@@ -450,6 +473,8 @@ document.getElementById('queryForm').addEventListener('submit', async (e) => {
         
         const data = await response.json();
         
+        loading.classList.add('hidden');
+        
         if (data.error) {
             document.getElementById('resultText').textContent = 
                 'Error: ' + data.error;
@@ -458,13 +483,272 @@ document.getElementById('queryForm').addEventListener('submit', async (e) => {
                 data.response;
         }
         
-        document.getElementById('queryResult').classList.remove('hidden');
+        result.classList.remove('hidden');
+        
+        // Smooth scroll to result on mobile
+        result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        
     } catch (error) {
+        loading.classList.add('hidden');
         document.getElementById('resultText').textContent = 
             'Connection error: ' + error.message;
+        result.classList.remove('hidden');
     }
 });
 </script>
+
+</body>
+</html>
+```
+
+#### Mobile-First Responsive CSS
+
+```css
+/* Base mobile-first styles */
+:root {
+    --primary-color: #2563eb;
+    --bg-color: #ffffff;
+    --text-color: #1f2937;
+    --border-color: #e5e7eb;
+    --card-bg: #f9fafb;
+    --touch-target: 44px; /* Minimum touch target size */
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 16px; /* Prevent mobile zoom on input focus */
+    line-height: 1.6;
+}
+
+/* Mobile-first container */
+.container {
+    width: 100%;
+    padding: 16px;
+    max-width: 100%;
+}
+
+/* Current conditions card - mobile optimized */
+.current-conditions {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.current-conditions h2 {
+    margin-top: 0;
+    font-size: 1.5rem;
+}
+
+/* Metric grid - stacks on mobile */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+.metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--bg-color);
+    border-radius: 8px;
+    min-height: var(--touch-target);
+}
+
+.metric .label {
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.metric .value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+/* Query panel - mobile optimized */
+.query-panel {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.query-panel h2 {
+    margin-top: 0;
+    font-size: 1.25rem;
+}
+
+/* Form elements with proper touch targets */
+#queryInput {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    resize: vertical;
+    font-family: inherit;
+    margin-bottom: 12px;
+}
+
+#queryInput:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.btn-primary {
+    width: 100%;
+    min-height: var(--touch-target);
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-primary:active {
+    background-color: #1d4ed8;
+    transform: scale(0.98);
+}
+
+/* Loading spinner */
+.loading {
+    text-align: center;
+    padding: 20px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 10px;
+    border: 4px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Result display */
+#queryResult {
+    background: white;
+    border-left: 4px solid var(--primary-color);
+    padding: 16px;
+    border-radius: 8px;
+    margin-top: 16px;
+}
+
+#queryResult h3 {
+    margin-top: 0;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+}
+
+#resultText {
+    font-size: 1rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Charts - responsive */
+.chart-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 20px;
+}
+
+.chart-container img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Tablet styles (min-width: 640px) */
+@media (min-width: 640px) {
+    .container {
+        padding: 24px;
+        max-width: 640px;
+        margin: 0 auto;
+    }
+    
+    .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .btn-primary {
+        width: auto;
+        min-width: 200px;
+    }
+}
+
+/* Desktop styles (min-width: 1024px) */
+@media (min-width: 1024px) {
+    .container {
+        max-width: 1024px;
+    }
+    
+    .metrics-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .query-panel {
+        padding: 30px;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #1f2937;
+        --text-color: #f9fafb;
+        --border-color: #374151;
+        --card-bg: #111827;
+    }
+    
+    #queryInput {
+        background-color: #374151;
+        color: var(--text-color);
+    }
+}
+
+/* High contrast for accessibility */
+@media (prefers-contrast: high) {
+    .btn-primary {
+        border: 2px solid white;
+    }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
 ```
 
 ## Data Flow Examples
