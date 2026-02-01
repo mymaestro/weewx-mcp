@@ -1,12 +1,13 @@
 :root {
   color-scheme: light;
-  --bg: #0f172a;
-  --card: #111827;
-  --muted: #94a3b8;
-  --text: #e2e8f0;
-  --accent: #38bdf8;
-  --accent-2: #22c55e;
-  --border: #1f2937;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --muted: #64748b;
+  --text: #0f172a;
+  --accent: #0ea5e9;
+  --accent-2: #16a34a;
+  --border: #e2e8f0;
+  --surface: #f1f5f9;
 }
 
 * {
@@ -27,7 +28,7 @@ body {
   justify-content: space-between;
   padding: 1.25rem 2rem;
   border-bottom: 1px solid var(--border);
-  background: #0b1220;
+  background: #ffffff;
 }
 
 .brand-title {
@@ -60,6 +61,7 @@ body {
 .nav-link:hover {
   color: var(--text);
   border-color: var(--accent);
+  background: #e0f2fe;
 }
 
 .container {
@@ -75,7 +77,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 1rem;
   padding: 1.5rem;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.35);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
 }
 
 .card-header {
@@ -109,9 +111,9 @@ body {
 
 .metric {
   padding: 1rem;
-  background: #0b1220;
+  background: var(--surface);
   border-radius: 0.75rem;
-  border: 1px solid #101826;
+  border: 1px solid var(--border);
 }
 
 .metric .label {
@@ -134,10 +136,10 @@ body {
 
 figure {
   margin: 0;
-  background: #0b1220;
+  background: var(--surface);
   padding: 0.75rem;
   border-radius: 0.75rem;
-  border: 1px solid #101826;
+  border: 1px solid var(--border);
 }
 
 figure img {
