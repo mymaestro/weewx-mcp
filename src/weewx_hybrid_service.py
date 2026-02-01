@@ -8,6 +8,8 @@ Runs the Hybrid REST API server inside the WeeWX engine.
 from __future__ import annotations
 
 import logging
+import os
+import sys
 import threading
 from typing import Optional
 
@@ -24,6 +26,12 @@ except Exception as exc:  # pragma: no cover
         "Install uvicorn/starlette in the WeeWX Python environment."
     ) from exc
 
+def _ensure_local_import_path():
+    module_dir = os.path.dirname(os.path.abspath(__file__))
+    if module_dir not in sys.path:
+        sys.path.insert(0, module_dir)
+
+
 try:
     from weewx_hybrid_api import build_app
     from weewx_mcp_server import DEFAULT_DB_PATH
@@ -31,12 +39,17 @@ except Exception:
     try:
         from user.weewx_hybrid_api import build_app
         from user.weewx_mcp_server import DEFAULT_DB_PATH
-    except Exception as exc:  # pragma: no cover
-        raise SystemExit(
-            "Hybrid API modules not found. Copy weewx_hybrid_api.py and "
-            "weewx_mcp_server.py into the WeeWX user module path (e.g., /etc/weewx/bin/user) "
-            "or add their directory to [Python] python_path in weewx.conf."
-        ) from exc
+    except Exception:
+        _ensure_local_import_path()
+        try:
+            from weewx_hybrid_api import build_app
+            from weewx_mcp_server import DEFAULT_DB_PATH
+        except Exception as exc:  # pragma: no cover
+            raise SystemExit(
+                "Hybrid API modules not found. Copy weewx_hybrid_api.py and "
+                "weewx_mcp_server.py into the WeeWX user module path (e.g., /etc/weewx/bin/user) "
+                "or add their directory to [Python] python_path in weewx.conf."
+            ) from exc
 
 log = logging.getLogger(__name__)
 
