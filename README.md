@@ -215,14 +215,31 @@ pip install ".[api]"
 
 ### Hybrid REST API (WeeWX Service Extension)
 
-You can run the REST API inside the WeeWX engine using the service extension:
+You can run the REST API inside the WeeWX engine using the service extension.
+This requires the WeeWX Python environment to have `starlette` and `uvicorn` installed, and the
+hybrid modules to be on WeeWX's `PYTHONPATH`.
 
-1) Copy these files into your WeeWX user module path (e.g., /etc/weewx/bin/user):
+1) Install dependencies into the same Python environment WeeWX uses:
+
+```
+# If WeeWX uses system Python
+sudo pip3 install "starlette>=0.20.0" "uvicorn>=0.20.0"
+# Or, if using system-managed python
+sudo apt install python3-starlette python3-uvicorn
+
+# If WeeWX uses a venv (common on Debian/Ubuntu)
+source /path/to/weewx-venv/bin/activate
+pip install "starlette>=0.20.0" "uvicorn>=0.20.0"
+```
+
+2) Copy these files into your WeeWX user module path (e.g., /etc/weewx/bin/user):
    - src/weewx_hybrid_service.py
    - src/weewx_hybrid_api.py
    - src/weewx_mcp_server.py
 
-2) Add to weewx.conf:
+  Ensure file ownership/permissions allow WeeWX to import them.
+
+3) Add to weewx.conf:
 
 ```
 [Engine]
@@ -232,11 +249,22 @@ You can run the REST API inside the WeeWX engine using the service extension:
 [HybridAPI]
   enable = true
   host = 0.0.0.0
-  port = 9090
+  port = 9339
   db_path = /var/lib/weewx/weewx.sdb
 ```
 
-3) Restart WeeWX.
+4) Restart WeeWX.
+
+**Troubleshooting**
+
+If you see:
+`Missing dependencies for Hybrid API service. Install uvicorn/starlette and ensure weewx_hybrid_api.py is on PYTHONPATH.`
+
+then either:
+- The dependencies are not installed in the Python environment used by WeeWX, or
+- The hybrid modules are not in WeeWX's user module path.
+
+Re-check steps (1) and (2) above, then restart WeeWX.
 
 ## Available Tools
 

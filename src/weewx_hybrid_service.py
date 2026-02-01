@@ -18,13 +18,25 @@ except Exception as exc:  # pragma: no cover - only when not running in WeeWX
 
 try:
     import uvicorn
-    from weewx_hybrid_api import build_app
-    from weewx_mcp_server import DEFAULT_DB_PATH
 except Exception as exc:  # pragma: no cover
     raise SystemExit(
         "Missing dependencies for Hybrid API service. "
-        "Install uvicorn/starlette and ensure weewx_hybrid_api.py is on PYTHONPATH."
+        "Install uvicorn/starlette in the WeeWX Python environment."
     ) from exc
+
+try:
+    from weewx_hybrid_api import build_app
+    from weewx_mcp_server import DEFAULT_DB_PATH
+except Exception:
+    try:
+        from user.weewx_hybrid_api import build_app
+        from user.weewx_mcp_server import DEFAULT_DB_PATH
+    except Exception as exc:  # pragma: no cover
+        raise SystemExit(
+            "Hybrid API modules not found. Copy weewx_hybrid_api.py and "
+            "weewx_mcp_server.py into the WeeWX user module path (e.g., /etc/weewx/bin/user) "
+            "or add their directory to [Python] python_path in weewx.conf."
+        ) from exc
 
 log = logging.getLogger(__name__)
 
