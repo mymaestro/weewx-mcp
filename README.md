@@ -213,6 +213,31 @@ Install optional dependencies first if needed:
 pip install ".[api]"
 ```
 
+### Hybrid REST API (WeeWX Service Extension)
+
+You can run the REST API inside the WeeWX engine using the service extension:
+
+1) Copy these files into your WeeWX user module path (e.g., /etc/weewx/bin/user):
+   - src/weewx_hybrid_service.py
+   - src/weewx_hybrid_api.py
+   - src/weewx_mcp_server.py
+
+2) Add to weewx.conf:
+
+```
+[Engine]
+  [[Services]]
+    restful_services = user.weewx_hybrid_service.HybridAPIService
+
+[HybridAPI]
+  enable = true
+  host = 0.0.0.0
+  port = 9090
+  db_path = /var/lib/weewx/weewx.sdb
+```
+
+3) Restart WeeWX.
+
 ## Available Tools
 
 ### get_current_conditions
