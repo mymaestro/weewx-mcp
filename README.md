@@ -365,6 +365,7 @@ Once connected to Claude Code or Claude Desktop, you can ask natural language qu
 - "What's the current temperature and humidity?"
 - "Show me the hottest and coldest days in January 2025"
 - "What was the longest dry spell last year?"
+
 - "Give me monthly rainfall totals for 2025"
 - "Find all days when wind speed exceeded 25 mph in March"
 - "Show weekly temperature trends for the summer months"
