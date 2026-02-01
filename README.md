@@ -188,6 +188,31 @@ The SSE transport exposes two endpoints:
 
 Connect your MCP client to `http://127.0.0.1:8080/sse` (or use `0.0.0.0` for remote access).
 
+### Hybrid REST API (Phase 1)
+
+Run the lightweight REST API server for dashboard and programmatic access:
+
+```bash
+python src/weewx_hybrid_api.py --host 127.0.0.1 --port 9090
+```
+
+Key endpoints:
+
+- `GET /api/status` - Health check, database status
+- `GET /api/current` - Current conditions
+- `GET /api/temperature?start=YYYY-MM-DD&end=YYYY-MM-DD`
+- `GET /api/rainfall?start=YYYY-MM-DD&end=YYYY-MM-DD`
+- `GET /api/wind?min_speed=10&start=YYYY-MM-DD&end=YYYY-MM-DD`
+- `GET /api/humidity?start=YYYY-MM-DD&end=YYYY-MM-DD`
+- `GET /api/daily-rain?start=YYYY-MM-DD&end=YYYY-MM-DD`
+- `GET /api/pressure?start=YYYY-MM-DD&end=YYYY-MM-DD`
+
+Install optional dependencies first if needed:
+
+```bash
+pip install ".[api]"
+```
+
 ## Available Tools
 
 ### get_current_conditions
