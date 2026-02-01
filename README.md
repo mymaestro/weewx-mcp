@@ -158,6 +158,22 @@ pipx install mcp
 
 Avoid system-wide `pip install` on Debian/Ubuntu; prefer venv or pipx.
 
+If WeeWX is installed via `apt` and uses the system Python (no venv), the service extension
+will require system site-packages. In that case, you can install with:
+
+```bash
+sudo pip3 install mcp "starlette>=0.20.0" "uvicorn>=0.20.0" --break-system-packages
+```
+
+Or use Ubuntu packages for Starlette/Uvicorn:
+
+```bash
+sudo apt install python3-starlette python3-uvicorn
+```
+
+Use this only if WeeWX is bound to the system Python and you understand the risks of
+modifying system-managed Python packages.
+
 ## Usage
 
 ### Via Stdio (Local/SSH)
